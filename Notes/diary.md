@@ -64,3 +64,68 @@ I also investigated on the `Send for Credit Collection` and I have discovered (a
 ![Send for Credit Collection as a transition state](image-5.png)
 
 As I said earlier we can ignore this bottlenecks for the small number of occurences, but we cannot ignore how this final state is reached to slowly, it is the first real problem of this process...
+
+Then I switched on the `Dotted Chart`, but first there is a small legend:
+
+![Legends of the dotted chart](image-6.png)
+
+![Dotted Chart](image-7.png)
+
+In this chart I observed how the case `Send for Credit Collection` is a periodic event and his interval of time is increased proportionally with number of RTF. I 
+
+I also observed that the activity `Send Appeal to Prefecture` is also periodic, so the bottleneck is justified by this periodic operation.
+
+This two observation are justified but, especially the first one, they shouldn't been periodical, the time that they consume is really to much for the process.
+
+In this chart we can also see how the transition between the `Create Fine` and `Send Fine` activities is not so important in term of times if we have the fully paint in front of us.
+
+To confirm the periodicity of some activities I watched the *Horizon Chart*, with month as time unit (I always used month in the previous charts):
+
+![Horizon Chart](image-8.png)
+
+This chart confirmed the periodicity of `Send for Credit Collection` but not the periodicity of `Send Appeal to Prefecture, that just have a peak in 2012!
+
+The *Performance View* just displayed the timing of the various traces and the timestamp of the transition between activities. At the moment it doesn't add nothing to my knwoledge. Maybe it can help me when I have to indagate into some specific activities.
+
+The *Sunburst Plot* didn't give me nothing new.
+
+Instead the *Transition Matrix* has given me something:
+
+![Transition Matrix Frequency](image-9.png)
+
+Talking about the frequency filter I can say that there are much transition `Payment` to `Payment` that doesn't satisfy me, but maybe they are only double payment due to credit card limit or something, I will look into it.
+
+The acitivy `Send for Credit Collection` is not used for transition, only in 16 occurences, that make me think that this transition is not relevant at all.
+
+The activity `Create Fine` is confirmed as starting point and it can transition into all the other activities, but with some preferences.
+
+Same considerations for the performance filter of the matrix:
+
+![Transition Matrix Performance](image-10.png)
+
+Here we can also observe the bottlenecks, that often involve `Send for Credit Collection` as I said before, but the process seems to have burocracy issue for this particular activity.
+
+To individuate the real bottlenecks we have to cross the two matrix and see where both years and occurences are over a thresold. Here is a list of these points:
+
+- `Add penalty` -> `Send for Credit Collection`
+- `Create Fine` -> `Send for Credit Collection`
+- `Insert Fine Notification` -> `Send for Credit Collection`
+- `Send Fine` -> `Send for Credit Collection`
+
+There are others transition that can be valuable, like `Create Fine` -> `Insert Fine` but again, it seems that there is some burocracy in the middle of it and the time that pass between is not that much (~5m).
+
+To finish the *Visual Analytics* of PMTK I also watched the *Variant Explorer*:
+
+![Variants Explorer](image-11.png)
+
+I have selected the variants that I am gonna consider in my analysis, so the threesold in this case would be > 1%. Using this threesold I am gonna explore only 4 of the End Activities! Excluding a lot of cases that are not relevent or "pattern like", but to be sure of this last sentences I have to apply some comparative model or something to individuate the real patterns or similar transitions...
+
+Considering 75% of the cases the *Process Model* result like:
+
+![Process Model 75%](image-12.png)
+
+That is not really a surprise if we consider that the first tree variants cover all of this 75%, but using a larger percentage make the model unreadable.
+
+Now that I have watched all "on the fly" I can follow the project guidelines to build a correct strategy for my analysis!
+
+## Specific observations:
