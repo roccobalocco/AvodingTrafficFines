@@ -6,7 +6,7 @@ I am using the dataset provided by *de Leoni, M. (Massimiliano); Mannhardt, Feli
 
 ### Notes:
 
-I am currently using *python 3.10.12*, any problems that involves versioning are out of my control.
+I am currently using *python >= 3.10.12*, any problems that involves versioning are out of my control.
 
 The `.xes` file is too large to be uploaded, if u wish to replicate my analysis you should download it by yourself.
 
