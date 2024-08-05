@@ -316,6 +316,155 @@ These Petri Nets reflect what we have seen in the table above in a graphical way
 
 ![image-20240801165409563](./assets/image-20240801165409563.png)
 
-​	
+## Conformance Checking:
 
-​	
+I compared my filtered Event Logs (AS-IS) to the TO-BE:
+
+```python
+#Find diagnostic table
+net, im, fm = pm4py.discover_petri_net_inductive(original_event_log, activity_key='concept:name', case_id_key='case:concept:name', timestamp_key='time:timestamp')
+alignments_diagnostics = pm4py.conformance_diagnostics_alignments(original_event_log, net, im, fm, activity_key='concept:name', case_id_key='case:concept:name', timestamp_key='time:timestamp')
+pm4py.view_alignments(filtered_log, alignments_diagnostics, format='png')
+```
+
+![image-20240801173102027](./assets/image-20240801173102027.png)
+
+### Fitness for Original Event Log:
+
+```py
+# Discover a process model using the Alpha Miner algorithm
+net, initial_marking, final_marking = pm4py.algo.discovery.alpha.algorithm.apply(original_event_log)
+# Calculate the fitness of the event log against the discovered process model
+fitness = pm4py.algo.evaluation.replay_fitness.algorithm.apply(original_event_log, net, initial_marking, final_marking)
+
+# Print the results
+print(f"average_trace_fitness: {fitness['average_trace_fitness']}")
+print(f"log fitness: {fitness['log_fitness']}")
+```
+
+- **Average Trace Fitness**: $0.6741431381488104$
+- **Log Fitness**: $ 0.637766272135165$
+
+These scores are not so emotional as we wished, but it can be good if we refined the event log on which we compute the theoretical model.
+
+Then I used the following code to extract an histogram with token based replay technique:
+
+```python
+net, im, fm = pm4py.discover_petri_net_alpha(original_event_log)
+diagnostics = pm4py.conformance_diagnostics_token_based_replay(original_event_log, net, im, fm, return_diagnostics_dataframe=True)
+frequency = diagnostics.groupby('trace_fitness').size().reset_index(name='count')
+
+# Define histogram
+plt.hist(diagnostics['trace_fitness'], bins=20, color='violet')
+plt.xlabel('Fitness')
+plt.ylabel('Frequency (observations)')
+plt.title('Fitness Distribution')
+plt.xlim(0, 1)
+plt.xticks(np.arange(0, 1, 0.1))
+plt.show()
+
+# Calculate mean, median, and standard deviation of fitness
+mean_difference = diagnostics['trace_fitness'].mean()
+print(f"Mean of the fitness values: {mean_difference}")
+
+median_difference = diagnostics['trace_fitness'].median()
+print(f"Median of the fitness values: {median_difference}")
+
+std_deviation = np.std(diagnostics['trace_fitness'], ddof=1)
+print("Sample Standard Deviation of fitness values:", std_deviation)
+```
+
+That generated:
+
+![image-20240803145342410](./assets/image-20240803145342410.png)
+
+- **Mean of the fitness values**: $0.6741431381487306$ 
+- **Median of the fitness values**: $0.7$ 
+- **Sample Standard Deviation of fitness values**: $0.05799257077111415$
+
+### Fitness for Filtered Event Log:
+
+```python
+# Discover a process model using the Alpha Miner algorithm
+net, initial_marking, final_marking = pm4py.algo.discovery.alpha.algorithm.apply(filtered_log)
+# Calculate the fitness of the event log against the discovered process model
+fitness = pm4py.algo.evaluation.replay_fitness.algorithm.apply(filtered_log, net, initial_marking, final_marking)
+
+# Print the results
+print(f"average_trace_fitness: {fitness['average_trace_fitness']}")
+print(f"log fitness: {fitness['log_fitness']}")
+```
+
+- **Average Trace Fitness**: $0.8145291945051658$
+- **Log Fitness**: $0.8009576224898953$
+
+These values represent a good result for a conformity analysis, the event logs seem generally compliant with the theoretical model represented by the *alpha* algorithm.
+
+Then I used the following code to extract an histogram with token based replay technique:
+
+```python
+net, im, fm = pm4py.discover_petri_net_alpha(filtered_log)
+diagnostics = pm4py.conformance_diagnostics_token_based_replay(filtered_log, net, im, fm, return_diagnostics_dataframe=True)
+frequency = diagnostics.groupby('trace_fitness').size().reset_index(name='count')
+
+# Define histogram
+plt.hist(diagnostics['trace_fitness'], bins=20, color='violet')
+plt.xlabel('Fitness')
+plt.ylabel('Frequency (observations)')
+plt.title('Fitness Distribution')
+plt.xlim(0, 1)
+plt.xticks(np.arange(0, 1, 0.1))
+plt.show()
+
+# Calculate mean, median, and standard deviation of fitness
+mean_difference = diagnostics['trace_fitness'].mean()
+print(f"Mean of the fitness values: {mean_difference}")
+
+median_difference = diagnostics['trace_fitness'].median()
+print(f"Median of the fitness values: {median_difference}")
+
+std_deviation = np.std(diagnostics['trace_fitness'], ddof=1)
+print("Sample Standard Deviation of fitness values:", std_deviation)
+```
+
+That generated:
+
+![image-20240803145449872](./assets/image-20240803145449872.png)
+
+- **Mean of the fitness values**: $0.8145291945066301$
+- **Median of the fitness values**: $0.8035714285714286$
+- **Sample Standard Deviation of fitness values**: $0.046117420575037434$
+
+## Organizational goals:
+
+The organization needs to split its goals into 3 layer: *Strategical*, *Operational* and *Tactical*; each of them is addressed to a specific group of person. I have listed below the hypothetical goals of this organization: 
+
+- **Strategical**
+  1. Reduce the shipping time of the Fines, reduce the inefficiencies and the costs
+     - **Operational**
+       1. Increasing process compliance and identify the bottlenecks
+          - **Tactical**
+            1. Analyze the flows using process mining techniques
+            2. Real time monitoring
+       2. Optimize the allocation of resources
+          - **Tactical**
+            1. Training session for the staff to learn how to manage dysfunctional executions
+            2. Automating the reminders to offenders
+       3. Build some predictive models to classify the risks within the cases
+          - **Tactical**
+            1. Improving the data collection to extract more information (in a cleaner way)
+
+## Further Improvement:
+
+To improve this analysis we can include an analysis based on the type of vehicle:
+
+![image-20240803152339300](./assets/image-20240803152339300.png)
+
+But we must consider to extend the classification because at the moment only the type `A` can provide meaningful information.
+
+Also, we can classify the Fines for geographic area (cities, rural areas, peripheral areas, etc) and for gender of the offender and so on.
+
+We can also try to identify patterns to reduce the variants number or try to categorize the type of Fines by better analyzing the Points:
+
+![image-20240803152739457](./assets/image-20240803152739457.png)
+
