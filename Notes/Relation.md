@@ -1,20 +1,61 @@
-Pietro Masolini  - 2023/2024 - University of Milan - Computer Science
+Pietro Masolini  - 2023/2024 - University of Milan - Computer Science - Business Information Systems
 
 <hr>
-
 # Road Traffic Fine Analysis
 
 ## Introduction:
 
-The project aim to exploits process mining techniques to improve the management of road traffic  fines process.
+The aim of this project is to leverage process mining techniques to enhance the management of road traffic fines (RTF). We start by analyzing the event logs collected by the police information system to understand the statistical properties that distinguish cases. The primary objective is to map out the process from the event logs and identify an optimal process.
 
-To start we analyze the event logs collected by the police information system, in order to understand the statistical properties that distinguish cases.
+## Data Presentation:
 
-The main goal is discover how the process is from event logs to then identify an optimal process on how the process ought to be.
+### Application Area
+
+This case study focuses on the management and optimization of road traffic fines (RTF) through the application of process mining techniques. The primary objective is to analyze the existing process of handling traffic fines, identify inefficiencies, and propose improvements to enhance overall process performance. The application area encompasses the end-to-end lifecycle of traffic fine management, starting from the issuance of fines to their eventual resolution through payment, appeal, or credit collection.
+
+### Actors
+
+The key actors involved in the road traffic fine management process include:
+
+1. **Traffic Police Officers**: Responsible for issuing fines to violators based on traffic infractions.
+2. **Administrative Staff**: Handle the processing, recording, and administrative follow-up of the fines.
+3. **Violators**: Individuals who receive fines and are required to respond through payment, appeal, or other actions.
+4. **Credit Collection Agencies**: Engage in the collection of unpaid fines that are sent for credit collection.
+5. **Judicial Authorities**: Oversee the appeal process when violators contest fines.
+6. **Prefecture**: Administrative body that handles appeals and other legal processes related to traffic fines.
+
+### Dataset Available
+
+The dataset used in this analysis is derived from event logs recorded by the police information system. These logs capture detailed records of the various activities and transitions that occur within the traffic fine management process. The dataset is provided in the XES (eXtensible Event Stream) format, a standard format for event logs in process mining.
+
+### Dataset Characteristics
+
+- **Event Logs**: Each log entry corresponds to a specific activity related to a traffic fine case, including timestamps, activity names, case identifiers, and other relevant attributes.
+- **Number of Traces**: 150,370 traces are recorded, representing individual cases of traffic fines.
+- **Number of Events**: 561,470 events are captured, detailing each step taken in the process.
+- **Events per Trace**: On average, there are 3.734 events per trace, with a minimum of 2 and a maximum of 20 events per trace.
+
+### Attributes
+
+The dataset includes various attributes to support the analysis:
+
+- **Activities**: Key activities captured in the dataset include "Create Fine," "Send Fine," "Payment," "Send for Credit Collection," "Send Appeal to Prefecture," among others.
+- **Start and End Activities**: The process typically starts with the "Create Fine" activity and can end with several activities such as "Payment," "Send for Credit Collection," or "Send Appeal to Prefecture."
+- **Timestamps**: Each event includes a timestamp to track the chronological order and duration of activities.
+- **Attributes**: Additional attributes in the dataset include the fine amount, dismissal status, and duration of each case from start to end.
+
+### Peculiarities
+
+The dataset presents several peculiarities that are critical for the analysis:
+
+1. **Variability in Process Paths**: The process exhibits a high degree of variability, with multiple potential paths from the  creation of a fine to its resolution. This variability is driven by factors such as the violator's response (payment, appeal, or non-compliance) and the administrative actions taken by the authorities.
+2. **Bottlenecks and Delays**: Certain activities, particularly those involving credit collection and appeals, exhibit significant delays and bottlenecks. These delays impact the overall efficiency of the process and are key areas for potential optimization.
+3. **Checkpoint Activities**: Activities such as "Send Fine" serve as transitional checkpoints rather than true endpoints. These activities often precede critical actions like payment or credit collection, indicating their role in the intermediate stages of the process.
+4. **Process Compliance**: Analyzing the compliance of actual event logs with the theoretical process model reveals deviations and non-conformances. Understanding these deviations helps in identifying areas where the actual process diverges from the intended workflow.
 
 ## Data collection:
 
-I started the project importing the `xes` file and converting it into a pandas dataframe using the `pm4py` library:
+The project begins with importing the XES file and converting it into a pandas DataFrame using the pm4py library. This transformation allows for more straightforward analysis and manipulation.
 
 ```python
 original_event_log = pm4py.read_xes("../Assets/Road_Traffic_Fine_Management_Process.xes")
@@ -28,7 +69,7 @@ start_activities = pm4py.get_start_activities(original_event_log)
 end_activities = pm4py.get_end_activities(original_event_log)
 ```
 
-As we all expect, a RTF, starts with a `Create Fine` activities and can end in many ways. Usually we think that should end with a payment, and the observation confirm this for the major part, still a great percentage of RTF also ends up with other activities. The table below shows a summary about it:
+An RTF process typically starts with the `Create Fine` activity and can conclude in several ways. Although many cases end with `Payment`, a significant number also end with activities like `Send for Credit Collection` or `Send Appeal to Prefecture`.
 
 | Description      | Activities                                                   |
 | ---------------- | ------------------------------------------------------------ |
@@ -39,21 +80,21 @@ As we all expect, a RTF, starts with a `Create Fine` activities and can end in m
 
 ### Using python:
 
-We should consider that an RTF that ends up with `Send Fine` is not a real end for our process, but just a checkpoint in the workflow. We should think the same for `Send for Credit Collection`, in fact it seems like another checkpoint that should end up into `Payment`, in this moment I am considering this activity like a reminder for the unpayed RTF, but I will make it sure in the future, analyze the time between a `Send Fine` and a `Send for Credit Collection` activity.
+It's crucial to recognize that activities like `Send Fine` and `Send for Credit Collection` are checkpoints rather than true endpoints. For example, `Send Fine` often precedes `Payment` or `Send for Credit Collection`.
 
-I also had a look at the percentage of all the activities, without considering them as a Start nor End points:
+Exploring activity percentages further confirms that `Send Fine` is a transitional activity. Conversely, `Send for Credit Collection` often marks the end of a process, as evidenced by its frequency in the logs.
+
+Based on my analysis of the percentage of all activities without considering them as Start or End points, I confirmed my previous thought that `Send Fine` is primarily a checkpoint in the traces. This activity is recorded approximately $20'000$ times as an end activity and $100'000$ times in total.
+
+However, I cannot say the same for the `Send for Credit Collection` activity, as the numbers indicate that it is indeed a final activity.
+
+Another discovery from this initial analysis is that the activities `Add Penalty` and `Insert Fine Notification` appear to be part of most traces of an RTF.
 
 ![image-20240722155436204](./assets/image-20240722155436204.png)
 
-From this look I confirmed my previous thought about `Send Fine` was only a checkpoint in the traces because this kind of activities is listed ~$20000$ times as an end activity and ~$100000$ in total.
-
-Unfortunately I cannot consider the same for the `Send for Credit Collection` activity, because the numbers confirm that it is a real end activity.
-
-There is another discovery that I made up with this initial look, the activities `Add penalty` and `Insert Fine Notification` seems to be part of most of the traces of an RTF.
-
 ### Using PMTK:
 
-To get a better understanding of the initial dataset I switched into PMTK to pursue a better knowledge.
+The dataset was explored to gain insights into the number of events per case and the most common cases. This helped in identifying useful information and filtering out outliers that did not contribute significant insights.
 
 #### Log Summary
 
@@ -69,15 +110,15 @@ Then I had a look at the outliers, which doesn't provided any useful information
 
 ![image-20240722160437369](./assets/image-20240722160437369.png)
 
-A good percentage of events (~$48.13$%) end up with a *fast* resolution, but there is also a lot events with a long time taken to resolve even if we exclude the outliers values (~$50$ months), due to this I may consider to cut off some of period to obtain a better analysis.
+A substantial percentage of events conclude quickly, but many take longer, even excluding outliers. This suggests a need to optimize certain parts of the process. For instance, initiating credit collection promptly after adding a penalty could significantly reduce resolution times.
 
 I then decided to sort the *Bottlenecks* section by occurrences:
 
  ![image-20240722160759229](./assets/image-20240722160759229.png)
 
-Even if I consider a problem that between the creation of a fine and the actual fine, this bottlenecks doesn't seem too huge in terms of time. Instead, the highlighted one is really important for my analysis, it is suggesting me that *if credit collection was done right after adding a penalty we can save up so much time*.
+Even if I consider the issue between the creation of a fine and the actual fine, the bottleneck in terms of time doesn't seem too significant. Instead, the highlighted one is really important for my analysis. It suggests that *if credit collection was done right after adding a penalty, we could save a significant amount of time*.
 
-Then I discovered that `Send for Credit Collection` is mostly a final state with only 16 occurrences that involves it as a transition activity:
+Additionally, I discovered that `Send for Credit Collection` is mostly a final state, with only 16 occurrences where it is involved as a transition activity.
 
 ![image-20240722161017709](./assets/image-20240722161017709.png)
 
@@ -91,15 +132,15 @@ Then the chart:
 
 ![image-20240722161101118](./assets/image-20240722161101118.png)
 
-With a look at the chart we discover that `Send for Credit Collection` is a period event (or it is registered periodically) and his interval of time is increasedwith the number of RTF.I; `Send Appeal to Prefecture` is also periodic, so the bottleneck is somehow justified.
+This chart reveals periodic activities, such as `Send for Credit Collection` and `Send Appeal to Prefecture'` 
 
-We can also see how the transition between `Create Fine` and `Send Fine` is not so important in terms of time if we have the fully paint in front of use.
+The bottlenecks identified, such as delays between `Create Fine` and `Send Fine`, are less critical than those involving credit collection.
 
 #### Horizon Chart:
 
-To confirm the periodicity of some activities I watched this chart with month as time unit (the same of the previous charts):
-
 ![image-20240722162232438](./assets/image-20240722162232438.png)
+
+Confirms the periodicity of certain activities but indicates peaks rather than a consistent periodic pattern for others.
 
 It confirms the periodicity of `Send for Credit Collection` but not the periodicity of `Send Appeal to Prefecture`, that just have a peak in $2012$.
 
@@ -107,7 +148,7 @@ It confirms the periodicity of `Send for Credit Collection` but not the periodic
 
 ![image-20240729125648990](./assets/image-20240729125648990.png)
 
-With a first look at the matrix I can safely say that there are a lot of transition from `Payment` to `Payment`, that the activity `Send for Credit Collection` is not utilized for a transition and the activity `Create Fine` is confirmed to be a starting point with the possibility of transitioning into all the other activities (not without some "preferences").
+Highlights transitions, showing frequent transitions from `Payment` to `Payment`, the significant role of `Create Fine` as a starting point and `Send for Credit Collection` is not utilized for a transition.
 
 ![image-20240729130018364](./assets/image-20240729130018364.png)
 
@@ -156,11 +197,9 @@ These are the steps that I have followed during the realization of this analysis
 | 4    |                    | Process Mining       | Process Discovery                                            | Descriptive       |                                                              |
 | 5    |                    | Prescriptive         | Process optimization and simplification                      | Prescriptive      | Design of a simplified process to better understand the correct sequences of the activities |
 
-
-
 ### Cleaning Data:
 
-I have standardized the values of the `dismissal` column to facilitate its interpretation:
+Standardized values for dismissal and financial amounts to facilitate interpretation.
 
 ```python
 def classify_dismissal(row):
@@ -172,8 +211,6 @@ def classify_dismissal(row):
         return '?'
 original_event_log['dismissal'] = original_event_log.apply(classify_dismissal, axis=1)
 ```
-
-I have also standardized various financial values into a unified column called `amount`:
 
 ```python
 def classify_amounts(row):
@@ -196,11 +233,11 @@ original_event_log=original_event_log.fillna(0)
 
 ### Filtering Data:
 
-Then I have explored the dataset to take a look *on the activity number for trace, the variants that distinguish the dataset and the duration of the traces in term of days*. In this step we will shorten the dataset with:
+Next, I explored the dataset to examine the number of activities per trace, the variants that distinguish the dataset, and the duration of the traces in terms of days. Based on this analysis, we will refine the dataset with the following criteria:
 
-1. A maximum number of activities for trace as 9 (The box plot Maximum is 9.5, even if the point n.3 will cut up even more)
-2. We will consider only the variants that cover at least 0.24% of the cases in the event log (we will cover ~98.6% of all of the event logs this way)
-3. A maximum duration of the traces of 1494,6 days (The box plot Maximum)
+1. **Maximum number of activities per trace**: Set to $9$ (since the box plot maximum is $9.5$, this criterion will trim the dataset effectively).
+2. **Variants coverage**: Consider only the variants that cover at least $0.24$% of the cases in the event log. This way, we will cover approximately $98.6$% of all event logs.
+3. **Maximum trace duration**: Set to $1'494.6$ days (according to the box plot maximum).
 
 ```python
 # Filtering by the number of activities per trace
@@ -208,7 +245,10 @@ filtered_log = pm4py.filter_case_size(original_event_log, 1, 9)
 # Filtering for the variants (we will cover ~98.6% of all of the event logs this way)
 filtered_log = pm4py.filter_variants_top_k(filtered_log, 9)
 # Filtering for duration on the remaining traces
-filtered_log = pm4py.filter_case_performance(filtered_log, min_duration=0, max_duration=1494.6*24)
+case_durations = pm4py.get_all_case_durations(filtered_log)
+# the durations are in seconds, so we need to convert them to days 
+max_duration = ((1494.6*24)*60)*60
+filtered_log = pm4py.filter_case_performance(filtered_log, min_performance=0, max_performance=max_duration)
 ```
 
 ## Statistical Analysis:
@@ -318,7 +358,7 @@ These Petri Nets reflect what we have seen in the table above in a graphical way
 
 ## Conformance Checking:
 
-I compared my filtered Event Logs (AS-IS) to the TO-BE:
+By comparing the filtered event logs (AS-IS) to the theoretical model (TO-BE), we assess process compliance.
 
 ```python
 #Find diagnostic table
@@ -328,6 +368,8 @@ pm4py.view_alignments(filtered_log, alignments_diagnostics, format='png')
 ```
 
 ![image-20240801173102027](./assets/image-20240801173102027.png)
+
+Using the Alpha Miner algorithm, we discovered the process model and evaluated its fitness against the event logs.
 
 ### Fitness for Original Event Log:
 
@@ -437,22 +479,13 @@ That generated:
 
 ## Organizational goals:
 
-The organization needs to split its goals into 3 layer: *Strategical*, *Operational* and *Tactical*; each of them is addressed to a specific group of person. I have listed below the hypothetical goals of this organization: 
+#### Organizational Goals
 
-- **Strategical**
-  1. Reduce the shipping time of the Fines, reduce the inefficiencies and the costs
-     - **Operational**
-       1. Increasing process compliance and identify the bottlenecks
-          - **Tactical**
-            1. Analyze the flows using process mining techniques
-            2. Real time monitoring
-       2. Optimize the allocation of resources
-          - **Tactical**
-            1. Training session for the staff to learn how to manage dysfunctional executions
-            2. Automating the reminders to offenders
-       3. Build some predictive models to classify the risks within the cases
-          - **Tactical**
-            1. Improving the data collection to extract more information (in a cleaner way)
+The goals are divided into three layers: Strategical, Operational, and Tactical.
+
+- **Strategical**: *Reduce shipping time* for fines, *inefficiencies*, and *costs*.
+- **Operational**: *Increase process compliance* and *identify bottlenecks*.
+- **Tactical**: Utilize process mining techniques for flow analysis and real-time monitoring, *aiming to optimize the entire process*.
 
 ## Further Improvement:
 
@@ -468,3 +501,10 @@ We can also try to identify patterns to reduce the variants number or try to cat
 
 ![image-20240803152739457](./assets/image-20240803152739457.png)
 
+## Conclusion:
+
+This comprehensive analysis of the road traffic fines management process highlights several areas for improvement. By addressing identified bottlenecks and optimizing the process flow, significant efficiency gains can be achieved. The next steps involve refining the event logs and continuing the analysis to develop a more streamlined and effective process model.
+
+<hr>
+
+Pietro Masolini  - 2023/2024 - University of Milan - Computer Science - Business Information Systems
